@@ -150,8 +150,9 @@ function Meeting() {
     onSnapshot(participantsRef, async (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
         console.log('change====================', change);
-        console.log('peerConnections[remoteId]', peerConnections[remoteId]);
+        console.log('peerConnections', peerConnections);
         if (change.type === 'added') {
+          console.log('peerConnections[remoteId]', peerConnections[remoteId]);
           const remoteId = change.doc.id; // Use the participant ID as the remoteId
           if (!peerConnections[remoteId]) {
             console.log('peerConnections[remoteId]', localStream);
