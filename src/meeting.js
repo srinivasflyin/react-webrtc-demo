@@ -27,7 +27,7 @@ function Meeting() {
     // Start local stream and then listen for participants
     const initMeeting = async () => {
       await startLocalStream();
-      if(localStreamInitialized.current || localStream) {
+      if(localStreamInitialized.current && localStream) {
         listenForParticipants();  // Listen for participants only after stream is ready
       }
      
@@ -48,6 +48,7 @@ function Meeting() {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       console.log('Received local stream:', stream);
       setLocalStream(stream);
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
