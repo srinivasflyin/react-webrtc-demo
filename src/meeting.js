@@ -43,6 +43,42 @@ function Meeting() {
   }, [meetingId, peerConnections]);
 
 
+  // useEffect to start the local stream when meetingId or peerConnections change
+  useEffect(() => {
+    if (meetingId || Object.keys(peerConnections).length > 0) {
+      // Start local stream only if meetingId or peerConnections change
+      startLocalStream();
+    }
+
+    return () => {
+      // Cleanup peer connections and media tracks
+      Object.values(peerConnections).forEach((pc) => pc.close());
+      localStream?.getTracks().forEach((track) => track.stop());
+    };
+    // Dependency array makes sure this effect runs only when meetingId or peerConnections change
+  }, [meetingId, peerConnections]);
+
+  // useEffect to call listenForParticipants when localStream is ready or meetingId/peerConnections change
+  useEffect(() => {
+    if (localStream) {  // Ensure localStream is available before calling listenForParticipants
+      listenForParticipants();
+    }
+
+    return () => {
+      // Cleanup peer connections and media tracks
+      Object.values(peerConnections).forEach((pc) => pc.close());
+      localStream?.getTracks().forEach((track) => track.stop());
+    };
+  }, [localStream, meetingId, peerConnections]); // Runs when any of these change and localStream is available
+
+
+  //  // useEffect to wait for `localStream` to update before calling `listenForParticipants`
+  //  useEffect(() => {
+  //   if (localStream) {  // This effect will run once `localStream` is updated
+  //     listenForParticipants();
+  //   }
+  // }, [localStream]); // Runs only when `localStream` is updated
+
   useEffect(() => {
     setLocalStream(stream => {
       return { ...stream };
