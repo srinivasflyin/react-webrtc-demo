@@ -79,11 +79,11 @@ function Meeting() {
   //   }
   // }, [localStream]); // Runs only when `localStream` is updated
 
-  useEffect(() => {
-    setLocalStream(stream => {
-      return { ...stream };
-    });
-  }, [localStreamInitialized.current]);
+  // useEffect(() => {
+  //   setLocalStream(stream => {
+  //     return { ...stream };
+  //   });
+  // }, [localStreamInitialized.current]);
 
   // Start the local stream
   const startLocalStream = async () => {
