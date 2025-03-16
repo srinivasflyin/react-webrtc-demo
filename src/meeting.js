@@ -1,8 +1,8 @@
 // src/Meeting.js
 
 import React, { useEffect, useRef, useState } from 'react';
-import { firestore } from './firebaseConfig';  // Make sure you're importing firestore correctly
-import { collection, doc, addDoc, onSnapshot, updateDoc } from 'firebase/firestore';  // Modular SDK functions
+import { firestore } from './firebaseConfig';  // Ensure firestore is imported correctly
+import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';  // Modular SDK functions
 import { useParams, useNavigate } from 'react-router-dom';
 
 const servers = {
@@ -18,21 +18,21 @@ function Meeting() {
   const navigate = useNavigate();
   const { meetingId } = useParams(); // Get meetingId from the URL using the useParams hook
   const [localStream, setLocalStream] = useState(null);
-  const [peerConnection, setPeerConnection] = useState(null);
-  const [remoteStreams, setRemoteStreams] = useState({});
+  const [peerConnections, setPeerConnections] = useState({});  // Store peer connections by participant ID
+  const [remoteStreams, setRemoteStreams] = useState({});  // Store remote streams by participant ID
   const localVideoRef = useRef(null);
   const remoteVideosContainerRef = useRef(null);
 
   useEffect(() => {
     startLocalStream();
-    listenForRemoteCandidates();
-    listenForIncomingOffers();
+    listenForParticipants();
 
     return () => {
-      if (peerConnection) peerConnection.close();
+      // Cleanup peer connections and media tracks
+      Object.values(peerConnections).forEach((pc) => pc.close());
       localStream?.getTracks().forEach((track) => track.stop());
     };
-  }, [meetingId]);
+  }, [meetingId, peerConnections]);
 
   // Start the local stream
   const startLocalStream = async () => {
@@ -47,10 +47,9 @@ function Meeting() {
     }
   };
 
+  // Start peer connection with a remote participant
   const startPeerConnection = async (remoteId) => {
     const pc = new RTCPeerConnection(servers);
-
-    // Add local stream tracks to the peer connection
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
     pc.ontrack = (event) => {
@@ -75,52 +74,29 @@ function Meeting() {
     return pc;
   };
 
-  const listenForRemoteCandidates = () => {
+  // Listen for participants joining the meeting and initiate connections
+  const listenForParticipants = () => {
     const callDocRef = doc(firestore, 'calls', meetingId);
-    const answerCandidatesRef = collection(callDocRef, 'answerCandidates');
-    
-    // Listen for changes to answer candidates
-    onSnapshot(answerCandidatesRef, (snapshot) => {
-      snapshot.docChanges().forEach((change) => {
+    const participantsRef = collection(callDocRef, 'participants');
+
+    // Listen for changes to the participants list
+    onSnapshot(participantsRef, async (snapshot) => {
+      snapshot.docChanges().forEach(async (change) => {
         if (change.type === 'added') {
-          const candidate = new RTCIceCandidate(change.doc.data());
-          peerConnection.addIceCandidate(candidate);
+          const remoteId = change.doc.id;  // Use the participant ID as the remoteId
+          if (!peerConnections[remoteId]) {
+            const pc = await startPeerConnection(remoteId);
+            setPeerConnections((prev) => ({ ...prev, [remoteId]: pc }));
+          }
         }
       });
     });
   };
 
-  const listenForIncomingOffers = () => {
-    const callDocRef = doc(firestore, 'calls', meetingId);
-
-    onSnapshot(callDocRef, async (snapshot) => {
-      const data = snapshot.data();
-      if (data?.offer && !peerConnection) {
-        const remoteId = 'remote-peer-id'; // Replace with real participant ID
-        const pc = await startPeerConnection(remoteId);
-        setPeerConnection(pc);
-
-        const offerDescription = new RTCSessionDescription(data.offer);
-        await pc.setRemoteDescription(offerDescription);
-
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
-
-        // Update the call document with the answer
-        await updateDoc(callDocRef, {
-          answer: {
-            sdp: answer.sdp,
-            type: answer.type,
-          },
-        });
-      }
-    });
-  };
-
   const hangup = () => {
     localStream.getTracks().forEach((track) => track.stop());
-    peerConnection?.close();
-    setPeerConnection(null);
+    Object.values(peerConnections).forEach((pc) => pc.close());
+    setPeerConnections({});
     setRemoteStreams({});
     navigate('/');
   };

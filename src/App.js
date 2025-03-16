@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { firestore } from './firebaseConfig';  // Ensure firestore is imported correctly
-import { collection, doc, setDoc } from 'firebase/firestore';  // Modular SDK functions
+import { collection, doc, setDoc, addDoc } from 'firebase/firestore';  // Modular SDK functions
 import './App.css'; // Make sure to import the CSS
 
 function App() {
@@ -24,13 +24,23 @@ function App() {
     const callDocRef = doc(firestore, 'calls', newMeetingId); // Use doc() for document reference
     await setDoc(callDocRef, {});  // Create a new empty document in the 'calls' collection
 
+    // Add the first participant (the one creating the meeting)
+    const participantsRef = collection(callDocRef, 'participants');
+    await addDoc(participantsRef, { userId: 'creator-id', joinedAt: new Date() });
+
     // Redirect to the meeting page
     navigate(`/meeting/${newMeetingId}`);
   };
 
-  const joinMeeting = () => {
+  const joinMeeting = async () => {
     if (meetingId) {
       localStorage.setItem('meetingId', meetingId);
+      const callDocRef = doc(firestore, 'calls', meetingId);
+
+      // Add the current participant to the meeting
+      const participantsRef = collection(callDocRef, 'participants');
+      await addDoc(participantsRef, { userId: 'participant-id', joinedAt: new Date() });
+
       navigate(`/meeting/${meetingId}`);
     } else {
       alert('Please enter a valid meeting ID.');
