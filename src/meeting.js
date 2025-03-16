@@ -24,7 +24,13 @@ function Meeting() {
   const remoteVideosContainerRef = useRef(null);
 
   useEffect(() => {
-    startLocalStream();
+    // Start local stream and then listen for participants
+    const initMeeting = async () => {
+      await startLocalStream();
+      listenForParticipants();  // Listen for participants only after stream is ready
+    };
+
+    initMeeting();
     return () => {
       // Cleanup peer connections and media tracks
       Object.values(peerConnections).forEach((pc) => pc.close());
@@ -40,9 +46,10 @@ function Meeting() {
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
-      listenForParticipants();
+      return stream;
     } catch (error) {
       console.error('Error accessing local media devices:', error);
+      return null;
     }
   };
 
