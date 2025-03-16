@@ -27,7 +27,10 @@ function Meeting() {
     // Start local stream and then listen for participants
     const initMeeting = async () => {
       await startLocalStream();
-      listenForParticipants();  // Listen for participants only after stream is ready
+      if(localStreamInitialized.current || localStream) {
+        listenForParticipants();  // Listen for participants only after stream is ready
+      }
+     
     };
 
     initMeeting();
@@ -43,11 +46,13 @@ function Meeting() {
   const startLocalStream = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      console.log('Received local stream:', stream);
       setLocalStream(stream);
-      localStreamInitialized.current = true; // Mark as initialized
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
+      console.log('updates local stream:', localStream);
+      localStreamInitialized.current = true; // Mark as initialized
     } catch (error) {
       console.error('Error accessing local media devices:', error);
     }
@@ -87,6 +92,7 @@ function Meeting() {
 
   // Listen for participants joining the meeting and initiate connections
   const listenForParticipants = () => {
+    console.log('localstream', localStream);
     const callDocRef = doc(firestore, 'calls', meetingId);
     const participantsRef = collection(callDocRef, 'participants');
 
@@ -96,6 +102,7 @@ function Meeting() {
         if (change.type === 'added') {
           const remoteId = change.doc.id; // Use the participant ID as the remoteId
           if (!peerConnections[remoteId]) {
+            console.log('peerConnections[remoteId]', localStream);
             const pc = await startPeerConnection(remoteId);
             setPeerConnections((prev) => ({ ...prev, [remoteId]: pc }));
           }
