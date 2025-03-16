@@ -1,5 +1,3 @@
-// src/Meeting.js
-
 import React, { useEffect, useRef, useState } from 'react';
 import { firestore } from './firebaseConfig';  // Ensure firestore is imported correctly
 import { collection, doc, onSnapshot, addDoc } from 'firebase/firestore';  // Modular SDK functions
@@ -23,6 +21,8 @@ function Meeting() {
   const localVideoRef = useRef(null);
   const remoteVideosContainerRef = useRef(null);
 
+  const localStreamInitialized = useRef(false); // Track if local stream is initialized
+
   useEffect(() => {
     // Start local stream and then listen for participants
     const initMeeting = async () => {
@@ -31,6 +31,7 @@ function Meeting() {
     };
 
     initMeeting();
+
     return () => {
       // Cleanup peer connections and media tracks
       Object.values(peerConnections).forEach((pc) => pc.close());
@@ -43,19 +44,18 @@ function Meeting() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
       setLocalStream(stream);
+      localStreamInitialized.current = true; // Mark as initialized
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
       }
-      return stream;
     } catch (error) {
       console.error('Error accessing local media devices:', error);
-      return null;
     }
   };
 
   // Start peer connection with a remote participant
   const startPeerConnection = async (remoteId) => {
-    if (!localStream) {
+    if (!localStreamInitialized.current) {
       console.error('Local stream is not yet initialized.');
       return;
     }
@@ -92,9 +92,9 @@ function Meeting() {
 
     // Listen for changes to the participants list
     onSnapshot(participantsRef, async (snapshot) => {
-      snapshot.docChanges().forEach(async(change) => {
+      snapshot.docChanges().forEach(async (change) => {
         if (change.type === 'added') {
-          const remoteId = change.doc.id;  // Use the participant ID as the remoteId
+          const remoteId = change.doc.id; // Use the participant ID as the remoteId
           if (!peerConnections[remoteId]) {
             const pc = await startPeerConnection(remoteId);
             setPeerConnections((prev) => ({ ...prev, [remoteId]: pc }));
@@ -109,7 +109,7 @@ function Meeting() {
     Object.values(peerConnections).forEach((pc) => pc.close());
     setPeerConnections({});
     setRemoteStreams({});
-    navigate('/');
+    navigate('/'); // Redirect to the home page after hangup
   };
 
   return (
