@@ -23,8 +23,8 @@ function Meeting() {
   const localVideoRef = useRef(null);
   const remoteVideosContainerRef = useRef(null);
 
-  useEffect(() => {
-    startLocalStream();
+  useEffect(async () => {
+    await startLocalStream();
     listenForParticipants();
 
     return () => {
@@ -49,6 +49,11 @@ function Meeting() {
 
   // Start peer connection with a remote participant
   const startPeerConnection = async (remoteId) => {
+    if (!localStream) {
+      console.error('Local stream is not yet initialized.');
+      return;
+    }
+
     const pc = new RTCPeerConnection(servers);
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
