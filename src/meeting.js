@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { firestore } from './firebaseConfig';  // Ensure firestore is imported correctly
-import { collection, doc, onSnapshot, updateDoc } from 'firebase/firestore';  // Modular SDK functions
+import { collection, doc, onSnapshot, addDoc } from 'firebase/firestore';  // Modular SDK functions
 import { useParams, useNavigate } from 'react-router-dom';
 
 const servers = {
@@ -81,7 +81,7 @@ function Meeting() {
 
     // Listen for changes to the participants list
     onSnapshot(participantsRef, async (snapshot) => {
-      snapshot.docChanges().forEach(async (change) => {
+      snapshot.docChanges().forEach(async(change) => {
         if (change.type === 'added') {
           const remoteId = change.doc.id;  // Use the participant ID as the remoteId
           if (!peerConnections[remoteId]) {
