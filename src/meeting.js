@@ -108,33 +108,83 @@ function Meeting() {
   };
 
   // Start peer connection with a remote participant
+  // const startPeerConnection = async (remoteId) => {
+  //   if (!localStreamInitialized.current) {
+  //     console.error('Local stream is not yet initialized.');
+  //     return;
+  //   }
+
+  //   const pc = new RTCPeerConnection(servers);
+  //   localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
+  //   const remoteStream = new MediaStream();
+  //   pc.ontrack = (event) => {
+  //     console.log('remoteStreams[remoteId]=================', remoteStreams[remoteId]);
+      
+  //     if (!remoteStreams[remoteId]) {
+  //       const remoteVideo = document.createElement('video');
+
+  //       event.streams[0].getTracks().forEach((track) => {
+  //         console.log('track===============');
+  //         remoteStream.addTrack(track);
+  //       });
+  //       remoteVideo.srcObject = event.streams[0];
+  //       remoteVideo.autoplay = true;
+  //       remoteVideo.playsinline = true;
+  //       remoteVideosContainerRef.current.appendChild(remoteVideo);
+  //       setRemoteStreams((prev) => ({ ...prev, [remoteId]: remoteVideo }));
+  //     }
+  //   };
+
+  //   pc.onicecandidate = (event) => {
+  //     if (event.candidate) {
+  //       const callDocRef = doc(firestore, 'calls', meetingId);
+  //       const offerCandidatesRef = collection(callDocRef, 'offerCandidates');
+  //       addDoc(offerCandidatesRef, event.candidate.toJSON());
+  //     }
+  //   };
+
+  //   return pc;
+  // };
+
   const startPeerConnection = async (remoteId) => {
     if (!localStreamInitialized.current) {
       console.error('Local stream is not yet initialized.');
       return;
     }
-
+  
     const pc = new RTCPeerConnection(servers);
+    
+    // Add local stream tracks to the peer connection
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
-    const remoteStream = new MediaStream();
+  
+    // Ontrack event to handle remote stream
     pc.ontrack = (event) => {
-      console.log('remoteStreams[remoteId]=================', remoteStreams[remoteId]);
-      
+      console.log('ontrack event triggered:', event);
+  
+      // Check if the remote stream is already added
       if (!remoteStreams[remoteId]) {
         const remoteVideo = document.createElement('video');
         
+        // If tracks are present, add them to a new MediaStream and set to video
+        const remoteStream = new MediaStream();
         event.streams[0].getTracks().forEach((track) => {
-          console.log('track===============');
+          console.log('Adding remote track:', track);
           remoteStream.addTrack(track);
         });
-        remoteVideo.srcObject = event.streams[0];
+  
+        remoteVideo.srcObject = remoteStream;
         remoteVideo.autoplay = true;
         remoteVideo.playsinline = true;
+  
+        // Append the remote video element
         remoteVideosContainerRef.current.appendChild(remoteVideo);
+  
+        // Update state with new remote video
         setRemoteStreams((prev) => ({ ...prev, [remoteId]: remoteVideo }));
       }
     };
-
+  
+    // ICE candidate handling
     pc.onicecandidate = (event) => {
       if (event.candidate) {
         const callDocRef = doc(firestore, 'calls', meetingId);
@@ -142,9 +192,10 @@ function Meeting() {
         addDoc(offerCandidatesRef, event.candidate.toJSON());
       }
     };
-
+  
     return pc;
   };
+  
 
   // Listen for participants joining the meeting and initiate connections
   const listenForParticipants = () => {
