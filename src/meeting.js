@@ -152,8 +152,8 @@ function Meeting() {
         console.log('change====================', change);
         console.log('peerConnections', peerConnections);
         if (change.type === 'added') {
-          console.log('peerConnections[remoteId]', peerConnections[remoteId]);
           const remoteId = change.doc.id; // Use the participant ID as the remoteId
+          console.log('peerConnections[remoteId]', peerConnections[remoteId]);
           if (!peerConnections[remoteId]) {
             console.log('peerConnections[remoteId]', localStream);
             const pc = await startPeerConnection(remoteId);
