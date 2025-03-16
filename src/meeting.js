@@ -116,11 +116,17 @@ function Meeting() {
 
     const pc = new RTCPeerConnection(servers);
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
-
+    const remoteStream = new MediaStream();
     pc.ontrack = (event) => {
       console.log('remoteStreams[remoteId]=================', remoteStreams[remoteId]);
+      
       if (!remoteStreams[remoteId]) {
         const remoteVideo = document.createElement('video');
+        
+        event.streams[0].getTracks().forEach((track) => {
+          console.log('track===============');
+          remoteStream.addTrack(track);
+        });
         remoteVideo.srcObject = event.streams[0];
         remoteVideo.autoplay = true;
         remoteVideo.playsinline = true;
