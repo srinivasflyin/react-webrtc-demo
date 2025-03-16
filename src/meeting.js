@@ -23,27 +23,30 @@ function Meeting() {
 
   const localStreamInitialized = useRef(false); // Track if local stream is initialized
 
-  useEffect(() => {
-    // Start local stream and then listen for participants
-    const initMeeting = async () => {
-      await startLocalStream();
-      if (localStreamInitialized.current && localStream) {
-        listenForParticipants();  // Listen for participants only after stream is ready
-      }
+  // useEffect(() => {
+  //   // Start local stream and then listen for participants
+  //   const initMeeting = async () => {
+  //     await startLocalStream();
+  //     if (localStreamInitialized.current && localStream) {
+  //       listenForParticipants();  // Listen for participants only after stream is ready
+  //     }
 
-    };
+  //   };
 
-    initMeeting();
+  //   initMeeting();
 
-    return () => {
-      // Cleanup peer connections and media tracks
-      Object.values(peerConnections).forEach((pc) => pc.close());
-      localStream?.getTracks().forEach((track) => track.stop());
-    };
-  }, [meetingId, peerConnections]);
+  //   return () => {
+  //     // Cleanup peer connections and media tracks
+  //     Object.values(peerConnections).forEach((pc) => pc.close());
+  //     localStream?.getTracks().forEach((track) => track.stop());
+  //   };
+  // }, [meetingId, peerConnections]);
 
 
   // useEffect to start the local stream when meetingId or peerConnections change
+  
+  
+  
   useEffect(() => {
     if (meetingId || Object.keys(peerConnections).length > 0) {
       // Start local stream only if meetingId or peerConnections change
@@ -57,6 +60,8 @@ function Meeting() {
     };
     // Dependency array makes sure this effect runs only when meetingId or peerConnections change
   }, [meetingId, peerConnections]);
+
+
 
   // useEffect to call listenForParticipants when localStream is ready or meetingId/peerConnections change
   useEffect(() => {
@@ -113,6 +118,7 @@ function Meeting() {
     localStream.getTracks().forEach((track) => pc.addTrack(track, localStream));
 
     pc.ontrack = (event) => {
+      console.log('remoteStreams[remoteId]=================', remoteStreams[remoteId]);
       if (!remoteStreams[remoteId]) {
         const remoteVideo = document.createElement('video');
         remoteVideo.srcObject = event.streams[0];
@@ -143,6 +149,8 @@ function Meeting() {
     // Listen for changes to the participants list
     onSnapshot(participantsRef, async (snapshot) => {
       snapshot.docChanges().forEach(async (change) => {
+        console.log('change====================', change);
+        console.log('peerConnections[remoteId]', peerConnections[remoteId]);
         if (change.type === 'added') {
           const remoteId = change.doc.id; // Use the participant ID as the remoteId
           if (!peerConnections[remoteId]) {
