@@ -27,10 +27,10 @@ function Meeting() {
     // Start local stream and then listen for participants
     const initMeeting = async () => {
       await startLocalStream();
-      if(localStreamInitialized.current && localStream) {
+      if (localStreamInitialized.current && localStream) {
         listenForParticipants();  // Listen for participants only after stream is ready
       }
-     
+
     };
 
     initMeeting();
@@ -41,6 +41,13 @@ function Meeting() {
       localStream?.getTracks().forEach((track) => track.stop());
     };
   }, [meetingId, peerConnections]);
+
+
+  useEffect(() => {
+    setLocalStream(stream => {
+      return { ...stream };
+    });
+  }, [localStreamInitialized.current]);
 
   // Start the local stream
   const startLocalStream = async () => {
